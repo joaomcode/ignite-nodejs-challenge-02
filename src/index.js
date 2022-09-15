@@ -7,22 +7,92 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-const users = [];
+const users = [
+  {
+    "id": "a7056a47-1693-422c-b307-b0abd799f6c1",
+    "name": "Jon",
+    "username": "jonas1",
+    "pro": false,
+    "todos": [
+      {
+        "id": uuidv4(),
+        "title": "Nome da tarefa",
+        "done": false,
+        "deadline": new Date(),
+        "created_at": new Date()
+      }
+    ]
+  },
+  {
+    "id": "b582aa9f-9efb-4489-a980-9eb2bb3f8d71",
+    "name": "Jon",
+    "username": "jonas2",
+    "pro": false,
+    "todos": []
+  }
+];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+
+  const user = users.find(user => user.username === username);
+
+  if (!user) return response.status(404).json({ error: 'Mensagem do erro' });
+
+  request.user = user;
+
+  return next();
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const { pro, todos } = request.user;
+
+  if (!pro && todos.length >= 10) return response.status(403).json(
+    { error: 'Plano básico possui máximo de 10 todos' }
+  );
+
+  return next();
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+
+  const user = users.find(user => user.username === username)
+
+  if (!user) return response.status(404).json({ error: 'User not found' });
+
+  const todoId = request.params.id;
+
+  const regexExp = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
+
+  const validateUUID = regexExp.test(todoId); 
+
+  if (!validateUUID) return response.status(400).json({ error: 'ID not valide' });
+
+  const todoIndex = user.todos.findIndex(todos => todos.id === todoId);
+  
+  if (todoIndex === -1) return response.status(404).json({ error: 'Todo not found' });
+
+  request.user = user;
+  request.todo = user.todos[todoIndex];
+
+  return next();
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const userId = request.params.id;
+
+  if (!userId) return response.status(404).json({ error: 'User not existente' });
+
+  const userIndex = users.findIndex(users => users.id === userId)
+
+  if (userIndex === -1) return response.status(404).json({ error: 'User not found' });
+
+  const user = users.find(user => user.id === userId)
+
+  request.user = user;
+
+  return next();
 }
 
 app.post('/users', (request, response) => {
